@@ -1,11 +1,17 @@
+import os
 import pymysql
+
 from pathlib import Path
 from typing import Optional
-
 from flask import Flask, request, jsonify
 
 app = Flask(__name__)
-connection = pymysql.connect(host='localhost', user='root', password='password', database='mysql')
+connection = pymysql.connect(
+    host=os.environ['DB_HOST'],
+    user=os.environ['DB_USER'],
+    password=os.environ['DB_PASSWORD'],
+    database=os.environ['DB_NAME']
+)
 
 
 def fix_path(path: str) -> Path:
@@ -33,7 +39,6 @@ def handle_exception(error):
         "exception": repr(error),
     }) 
 
-
 @app.route('/user/list', methods=['GET'])
 def all_users():
 
@@ -44,7 +49,6 @@ def all_users():
         response = [dict(zip(columns, row)) for row in cur]
 
     return jsonify(response)
-
 
 @app.route('/user/add', methods=['POST'])
 def add_user():
@@ -62,7 +66,6 @@ def add_user():
         operation_type='add',
         operation_status='success'
     )
-
 
 @app.route('/user/edit', methods=['PUT'])
 def edit_user():
@@ -92,7 +95,6 @@ def edit_user():
         operation_status='success'
     )
 
-
 @app.route('/user/delete', methods=['DELETE'])
 def delete_user():
 
@@ -111,8 +113,13 @@ def delete_user():
         operation_status='success'
     )
 
+@app.route('/status', methods=['GET'])
+def status():
+    if connection.open:
+        return jsonify(status="OK")
 
-query_path = fix_path('../database/createTable.sql')
+
+query_path = fix_path('./phonebook.sql')
 with open(query_path) as query:
     with connection.cursor() as cur:
         cur.execute(query.read())
