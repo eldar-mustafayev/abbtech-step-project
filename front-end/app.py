@@ -1,6 +1,7 @@
+import os
 import requests
 from functools import cache, cached_property
-from flask import Flask, render_template
+from flask import Flask, render_template, Response
 
 app = Flask(__name__)
 
@@ -36,11 +37,15 @@ class PhoneBook:
 @app.route('/')
 def display_all():
     
-    response = requests.get('http://localhost:8080/user/list')
+    response = requests.get(f'http://{os.environ["BACKEND_HOST"]}:8080/user/list')
     data = response.json()
     phone_book = PhoneBook(data)
 
     return render_template('index.html', phone_book=phone_book)
+
+@app.route("/status")
+def status():
+    return Response(status=200)
 
 
 if __name__ == '__main__':
