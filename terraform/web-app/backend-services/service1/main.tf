@@ -77,3 +77,20 @@ resource "aws_lb_listener" "default" {
     target_group_arn = module.astg.target_group_arn
   }
 }
+
+resource "aws_autoscaling_policy" "this" {
+  depends_on  = [ module.astg ]
+  name        = "requests_count_scaling_policy"
+  policy_type = "TargetTrackingScaling"
+
+  autoscaling_group_name = module.astg.name
+
+  target_tracking_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ALBRequestCountPerTarget"
+      resource_label = format("%s/%s", var.alb_arn_suffix, module.astg.tg_arn_suffix)
+    }
+
+    target_value = 30
+  }
+}
