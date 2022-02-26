@@ -1,14 +1,10 @@
-module "network" {
-  source = "../../../network"
-}
-
 resource "aws_security_group" "service" {
-  vpc_id = module.network.vpc_id
+  vpc_id = var.vpc_id
 
   ingress {
     from_port       = 80
     to_port         = 80
-    protocol        = "tcp"
+    protocol        = "TCP"
     security_groups = [ var.alb_security_group ]
   }
 
@@ -26,12 +22,12 @@ resource "aws_security_group" "service" {
 
 resource "aws_security_group" "ssh" {
   name = "developer-access"
-  vpc_id = module.network.vpc_id
+  vpc_id = var.vpc_id
 
   ingress {
     from_port   = 22
     to_port     = 22
-    protocol    = "tcp"
+    protocol    = "TCP"
     cidr_blocks = [ "85.132.9.239/32", "185.161.226.58/32" ]
   }
 
@@ -41,12 +37,12 @@ resource "aws_security_group" "ssh" {
 }
 
 module "astg" {
-  source = "../../../../modules/astg"
+  source = "../../../modules/astg"
 
   port             = 80
   name             = "front-end"
-  subnets          = module.network.subnets
-  vpc_id           = module.network.vpc_id
+  subnets          = var.subnets
+  vpc_id           = var.vpc_id
   ami              = "ami-0eb7496c2e0403237"# Amazon Linux 2 #"ami-03f35ba71e8ead526" #nginx server
   instance_type    = "t2.micro"
   min_instances    = 1

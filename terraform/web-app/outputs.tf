@@ -1,3 +1,3 @@
 output "dns_name" {
-  value = module.front_end.dns_name
+  value = aws_lb.frontend.dns_name
 }

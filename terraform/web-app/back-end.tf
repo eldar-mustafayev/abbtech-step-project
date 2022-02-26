@@ -1,15 +1,6 @@
-module "network" {
-  source = "../network"
-}
-
-data "aws_availability_zones" "available" {
-  state = "available"
-}
-
-
 resource "aws_security_group" "backend" {
   name   = "back-end"
-  vpc_id = module.network.vpc_id
+  vpc_id = data.aws_vpc.default.id
 
   ingress {
     to_port     = 0
@@ -21,12 +12,12 @@ resource "aws_security_group" "backend" {
 
 resource "aws_security_group" "database" {
   name   = "database"
-  vpc_id = module.network.vpc_id
+  vpc_id = data.aws_vpc.default.id
 
   ingress {
     to_port         = 3306
     from_port       = 3306
-    protocol        = "tcp"
+    protocol        = "TCP"
     security_groups = [ aws_security_group.backend.id ]
   }
 }
@@ -45,15 +36,15 @@ resource "aws_db_instance" "main" {
   vpc_security_group_ids = [ aws_security_group.database.id ]
 }
 
-resource "aws_security_group" "alb" {
-  name   = "alb-back-end"
-  vpc_id = module.network.vpc_id
+resource "aws_security_group" "backend_alb" {
+  name   = "alb-backend"
+  vpc_id = data.aws_vpc.default.id
 
   ingress {
-    to_port     = 0
     from_port   = 0
+    to_port     = 65535
     protocol    = "TCP"
-    cidr_blocks = [ "0.0.0.0/0" ]
+    cidr_blocks = [ data.aws_vpc.default.cidr_block ]
   }
 
   egress {
@@ -64,21 +55,24 @@ resource "aws_security_group" "alb" {
   }
 }
 
-resource "aws_lb" "this" {
+resource "aws_lb" "backend" {
   name               = "back-end"
-  subnets            = module.network.subnets
+  subnets            = data.aws_subnets.default.ids
   load_balancer_type = "application"
   internal           = true
   security_groups    = [
     aws_security_group.backend.id,
-    aws_security_group.alb.id
+    aws_security_group.backend_alb.id
   ]
 }
 
-module "service1" {
-  source = "./services/service1"
+module "backend_service1" {
+  source = "./backend-services/service1"
 
-  alb_arn                = aws_lb.this.arn
+  alb_arn                = aws_lb.backend.arn
+  alb_arn_suffix         = aws_lb.backend.arn_suffix
+  vpc_id                 = data.aws_vpc.default.id
+  subnets                = data.aws_subnets.default.ids
   backend_security_group = aws_security_group.backend.id
 
   db_host     = aws_db_instance.main.address
@@ -86,3 +80,4 @@ module "service1" {
   db_username = var.db_username
   db_password = var.db_password
 }
+

@@ -2,9 +2,20 @@ variable "alb_arn" {
   type = string
 }
 
+variable "alb_arn_suffix" {
+  type = string
+}
 
 variable "backend_security_group" {
-    type = string
+  type = string
+}
+
+variable "vpc_id" {
+  type = string
+}
+
+variable "subnets" {
+  type = list(string)
 }
 
 variable "db_host" {
