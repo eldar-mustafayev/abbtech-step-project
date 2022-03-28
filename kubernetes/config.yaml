@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: configs
+data:
+  db-host: mysql-service
+  backend-host: backend-service

@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-volume-claim
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500M
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - name: mysql
+        image: ubuntu/mysql:edge
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: secrets
+              key: db-password
+        - name: MYSQL_USER
+          value: "eldar"
+        - name: MYSQL_PASSWORD
+          value: "password"
+        volumeMounts:
+        - name: mysql-data
+          mountPath: /var/lib/mysql
+        ports:
+        - containerPort: 3306
+          name: mysql
+          protocol: TCP
+      volumes:
+        - name: mysql-data
+          persistentVolumeClaim:
+            claimName: mysql-volume-claim
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-service
+spec:
+  selector:
+    app: mysql
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
