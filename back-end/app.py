@@ -3,8 +3,10 @@ import pymysql
 
 from pathlib import Path
 from typing import Optional
+from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 
+load_dotenv()
 app = Flask(__name__)
 connection = pymysql.connect(
     host=os.environ['DB_HOST'],
@@ -20,6 +22,7 @@ def fix_path(path: str) -> Path:
 @app.errorhandler(Exception)
 def handle_exception(error):
 
+    response = error.get_response()
     data: Optional[dict] = request.get_json(silent=True)
     if data is None:
         data = {'user_id': None}
@@ -37,7 +40,7 @@ def handle_exception(error):
         'operation_type': operation_type,
         'operation_status': "fail",
         "exception": repr(error),
-    }) 
+    }) , response.status_code
 
 @app.route('/user/list', methods=['GET'])
 def all_users():
@@ -106,6 +109,7 @@ def delete_user():
             'DELETE FROM phonebook WHERE user_id=%s',
             user_id
         )
+        connection.commit()
 
     return jsonify(
         user_id=data.get('user_id'),
@@ -127,6 +131,6 @@ with open(query_path) as query:
 
 
 if __name__ == "__main__":
-    app.run('0.0.0.0', 8080, debug=True)
+    app.run('0.0.0.0', 8080)
     connection.close()
 
