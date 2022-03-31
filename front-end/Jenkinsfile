@@ -1,0 +1,32 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKERHUB_CREDENTIALS=credentials('dockerhub-credentials')
+    }
+
+    stages {
+
+        stage ("Build Docker Image") {
+            steps {
+                sh 'docker build -t eldarmustafayev/abbtech-frontend .'
+            }
+        }
+
+        stage ("Login and push to Dockerhub") {
+            steps {
+                sh "echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin"
+                sh 'docker push eldarmustafayev/abbtech-frontend'
+            }
+        }
+        
+        stage ("Deploy") {
+            steps {
+                sh "kubectl apply -f ../kubernetes/secrets.yaml"
+                sh "kubectl apply -f ../kubernetes/config.yaml"
+                sh "kubectl apply -f ../kubernetes/front-end.yaml"
+            }
+        }
+    }
+
+}
