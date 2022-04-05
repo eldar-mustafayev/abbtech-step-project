@@ -10,7 +10,14 @@ pipeline {
         stage ("Run Tests") {
             steps {
                 sh 'pip3 install -r requirements.txt'
-                sh 'pytest'
+                sh 'pytest --cov-report xml:coverage.xml --cov . --junitxml=result.xml'
+            }
+        }
+
+        stage ("Sonarqube")
+        {
+            steps{
+                sh 'docker run --rm --net=host -v ${PWD}:/back-end sonarsource/sonar-scanner-cli sonar-scanner -D sonar.projectBaseDir=/back-end'
             }
         }
 
@@ -32,6 +39,7 @@ pipeline {
             steps {
                 sh "kubectl apply -f ../kubernetes/secrets.yaml"
                 sh "kubectl apply -f ../kubernetes/config.yaml"
+                sh "kubectl apply -f ../kubernetes/database.yaml"
                 sh "kubectl apply -f ../kubernetes/back-end.yaml"
             }
         }

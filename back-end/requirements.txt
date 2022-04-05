@@ -10,4 +10,5 @@ Werkzeug~=2.0.2
 wheel~=0.37.1
 cryptography~=36.0.1
 pytest~=7.1.1
+pytest-cov~=3.0.0
 python-dotenv~=0.20.0
