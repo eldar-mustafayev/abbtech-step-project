@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Optional
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+from werkzeug.exceptions import HTTPException
 
 load_dotenv()
 app = Flask(__name__)
@@ -22,9 +23,14 @@ def fix_path(path: str) -> Path:
 @app.errorhandler(Exception)
 def handle_exception(error):
 
-    response = error.get_response()
+    if issubclass(error.__class__, HTTPException):
+        response = error.get_response()
+        status_code = response.status_code
+    else:
+        status_code = 400
+
     data: Optional[dict] = request.get_json(silent=True)
-    if data is None:
+    if data is None or 'user_id' not in data:
         data = {'user_id': None}
 
     operation_type = ""
@@ -34,13 +40,15 @@ def handle_exception(error):
         operation_type = "edit"
     elif request.path.startswith('/user/delete'):
         operation_type = 'delete'
+    else:
+        operation_type = 'unknown'
 
     return jsonify({
         'user_id': data['user_id'],
         'operation_type': operation_type,
         'operation_status': "fail",
         "exception": repr(error),
-    }) , response.status_code
+    }) , status_code
 
 @app.route('/user/list', methods=['GET'])
 def all_users():
@@ -133,4 +141,3 @@ with open(query_path) as query:
 if __name__ == "__main__":
     app.run('0.0.0.0', 8080)
     connection.close()
-
